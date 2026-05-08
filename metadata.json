@@ -1,0 +1,7 @@
+{
+  "owner": "dcarbone",
+  "name": "install-jq-action",
+  "visibility": "internal",
+  "description": "Installs a version of jq into the job tool cache using simple shell scripts\n",
+  "block_publish": false
+}
