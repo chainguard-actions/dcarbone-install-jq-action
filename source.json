@@ -1,0 +1,11 @@
+{
+  "owner": "dcarbone",
+  "repo": "install-jq-action",
+  "version": "v2.1.0",
+  "commit_sha": "8867ddb4788346d7c22b72ea2e2ffe4d514c7bcb",
+  "url": "https://github.com/dcarbone/install-jq-action",
+  "policy_sha": "ff50f15e4b79bfbf764dafdfd2579175a6ea9771",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "1",
+  "harden_agent_version": "1"
+}
