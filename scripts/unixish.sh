@@ -110,6 +110,7 @@ mv "$RUNNER_TEMP/${_bin_name}" "$RUNNER_TOOL_CACHE/jq/jq"
 chmod +x "$RUNNER_TOOL_CACHE/jq/jq"
 
 echo "Adding $RUNNER_TOOL_CACHE/jq to path..."
-echo "$RUNNER_TOOL_CACHE/jq" >> $GITHUB_PATH
+safe=$(printf '%s' "$RUNNER_TOOL_CACHE" | tr -d '\n\r')
+echo "${safe}/jq" >> "$GITHUB_PATH"
 
 echo '::endgroup::'

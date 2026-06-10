@@ -1,11 +1,9 @@
 name: Install jq
 description: |
   Installs a version of jq into the job tool cache using simple shell scripts
-
 branding:
   icon: copy
   color: orange
-
 inputs:
   version:
     required: false
@@ -15,7 +13,6 @@ inputs:
     required: false
     description: "If 'true', does not check for existing jq installation before continuing."
     default: 'false'
-
 outputs:
   found:
     description: "If 'true', jq was already found on this runner"
@@ -23,10 +20,26 @@ outputs:
   installed:
     description: "If 'true', jq was installed by this action"
     value: "${{ inputs.force == 'true' || steps.jq-check-unix.outputs.found == 'false' || steps.jq-check-windows.outputs.found == 'false' }}"
-
 runs:
   using: composite
   steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: 'Check for jq - Unix-ish'
       id: jq-check-unix
       if: (runner.os == 'Linux' || runner.os == 'macOS')
@@ -39,7 +52,6 @@ runs:
         else
           echo "found=false" >> $GITHUB_OUTPUT
         fi
-
     - name: 'Install jq - Unix-ish non-1.7'
       if: (runner.os == 'Linux' || runner.os == 'macOS') && (inputs.version == '1.5' || inputs.version == '1.6') && (steps.jq-check-unix.outputs.found == 'false' || inputs.force == 'true')
       shell: bash
@@ -47,7 +59,6 @@ runs:
         JQ_VERSION: '${{ inputs.version }}'
       # language=sh
       run: ${GITHUB_ACTION_PATH}/scripts/unixish.sh
-
     - name: 'Install jq - Unix-ish 1.7'
       if: (runner.os == 'Linux' || runner.os == 'macOS') && inputs.version == '1.7' && (steps.jq-check-unix.outputs.found == 'false' || inputs.force == 'true')
       shell: bash
@@ -55,7 +66,6 @@ runs:
         JQ_VERSION: '${{ inputs.version }}'
       # language=sh
       run: ${GITHUB_ACTION_PATH}/scripts/unixish-17.sh
-
     - name: 'Check for jq - Windows-ish'
       id: jq-check-windows
       if: runner.os == 'Windows'
@@ -70,19 +80,15 @@ runs:
         {
             Add-Content $Env:GITHUB_OUTPUT "found=false"
         }
-
     - name: 'Install jq - Windows-ish non-1.7'
       if: runner.os == 'Windows' && (inputs.version == '1.5' || inputs.version == '1.6') && (steps.jq-check-windows.outputs.found == 'false' || inputs.force == 'true')
       shell: powershell
       env:
         JQ_VERSION: '${{ inputs.version }}'
-        ACTION_PATH: '${{ github.action_path }}'
-      run: $env:ACTION_PATH\scripts\windowsish.ps1
-
+      run: $Env:GITHUB_ACTION_PATH\scripts\windowsish.ps1
     - name: 'Install jq - Windows-ish 1.7'
       if: runner.os == 'Windows' && inputs.version == '1.7' && (steps.jq-check-windows.outputs.found == 'false' || inputs.force == 'true')
       shell: powershell
       env:
         JQ_VERSION: '${{ inputs.version }}'
-        ACTION_PATH: '${{ github.action_path }}'
-      run: $env:ACTION_PATH\scripts\windowsish-17.ps1
+      run: $Env:GITHUB_ACTION_PATH\scripts\windowsish-17.ps1
