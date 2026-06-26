@@ -1,0 +1,50 @@
+name: Test force reinstall of jq
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Pre-install jq to ensure it is already present
+        run: |
+          apt-get install -y jq 2>/dev/null || true
+          which jq && jq --version || true
+      - id: action
+        uses: .
+        with:
+          version: "1.7.1"
+          force: "true"
+      - name: Assert installed output is true (force=true always installs)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected installed='true' when force=true, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert jq is installed and functional after force reinstall
+        run: |
+          echo "Checking jq binary..."
+          if ! command -v jq &>/dev/null; then
+            echo "FAIL: jq binary not found in PATH after force reinstall"
+            exit 1
+          fi
+          JQ_VERSION_OUTPUT="$(jq --version)"
+          echo "jq version: $JQ_VERSION_OUTPUT"
+          if [ -z "$JQ_VERSION_OUTPUT" ]; then
+            echo "FAIL: jq --version returned empty output"
+            exit 1
+          fi
+          echo "PASS: jq is installed and functional after force reinstall"
+      - name: Assert jq can parse JSON after force reinstall
+        run: |
+          RESULT="$(echo '{"force":true}' | jq '.force')"
+          echo "jq result: $RESULT"
+          if [ "$RESULT" != "true" ]; then
+            echo "FAIL: jq did not return expected value, got '$RESULT'"
+            exit 1
+          fi
+          echo "PASS: jq parsed JSON correctly after force reinstall"

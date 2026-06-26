@@ -1,0 +1,50 @@
+name: Test jq already found (no force)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Pre-install jq to ensure it is present
+        run: |
+          apt-get install -y jq 2>/dev/null || true
+          which jq && jq --version || true
+      - id: action
+        uses: .
+        with:
+          version: "1.8.2"
+          force: "false"
+      - name: Assert found output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.found }}
+        run: |
+          echo "actual found: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected found='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert installed output is false (jq was already present, no force)
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual installed: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected installed='false' when jq already found and force=false, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert jq is still functional
+        run: |
+          if ! command -v jq &>/dev/null; then
+            echo "FAIL: jq binary not found in PATH"
+            exit 1
+          fi
+          RESULT="$(echo '{"test":42}' | jq '.test')"
+          echo "jq result: $RESULT"
+          if [ "$RESULT" != "42" ]; then
+            echo "FAIL: jq did not return expected value, got '$RESULT'"
+            exit 1
+          fi
+          echo "PASS: jq is functional"

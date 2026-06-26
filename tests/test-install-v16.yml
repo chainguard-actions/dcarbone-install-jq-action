@@ -1,0 +1,47 @@
+name: Test jq installation version 1.6
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          version: "1.6"
+          force: "true"
+      - name: Assert jq is installed and functional
+        run: |
+          echo "Checking jq binary..."
+          if ! command -v jq &>/dev/null; then
+            echo "FAIL: jq binary not found in PATH"
+            exit 1
+          fi
+          echo "jq found at: $(which jq)"
+          JQ_VERSION_OUTPUT="$(jq --version)"
+          echo "jq version: $JQ_VERSION_OUTPUT"
+          if [ -z "$JQ_VERSION_OUTPUT" ]; then
+            echo "FAIL: jq --version returned empty output"
+            exit 1
+          fi
+          echo "PASS: jq is installed and functional"
+      - name: Assert installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected installed='true', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert jq can parse JSON
+        run: |
+          RESULT="$(echo '{"hello":"world"}' | jq -r '.hello')"
+          echo "jq parse result: $RESULT"
+          if [ "$RESULT" != "world" ]; then
+            echo "FAIL: jq did not parse JSON correctly, got '$RESULT'"
+            exit 1
+          fi
+          echo "PASS: jq parsed JSON correctly"
