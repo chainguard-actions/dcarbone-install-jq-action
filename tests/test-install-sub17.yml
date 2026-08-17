@@ -1,0 +1,41 @@
+name: Test jq install sub-1.7 version (1.6)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Remove jq if present so we get a clean install
+        run: |
+          sudo apt-get remove -y jq 2>/dev/null || true
+          sudo rm -f /usr/bin/jq /usr/local/bin/jq 2>/dev/null || true
+
+      - id: action
+        uses: .
+        with:
+          version: "1.6"
+
+      - name: Assert jq is executable and correct version
+        run: |
+          echo "Checking jq is available..."
+          which jq
+          JQ_VERSION=$(jq --version)
+          echo "jq version: $JQ_VERSION"
+          if [ "$JQ_VERSION" != "jq-1.6" ]; then
+            echo "FAIL: expected jq-1.6, got $JQ_VERSION"
+            exit 1
+          fi
+          echo "PASS: jq version is correct"
+
+      - name: Assert installed output is true
+        env:
+          ACTUAL: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "actual installed: $ACTUAL"
+          if [ "$ACTUAL" != "true" ]; then
+            echo "FAIL: expected installed=true, got $ACTUAL"
+            exit 1
+          fi
+          echo "PASS"

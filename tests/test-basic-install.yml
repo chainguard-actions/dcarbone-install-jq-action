@@ -1,0 +1,49 @@
+name: Test basic jq install (default version)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Remove any existing jq to ensure clean install
+        run: sudo rm -f /usr/bin/jq /usr/local/bin/jq
+
+      - id: action
+        uses: .
+        with:
+          version: "1.7.1"
+
+      - name: Assert jq is installed and functional
+        run: |
+          echo "Checking jq is on PATH..."
+          which jq || { echo "FAIL: jq not found on PATH"; exit 1; }
+          JQ_VERSION_OUT="$(jq --version)"
+          echo "jq version: $JQ_VERSION_OUT"
+          if ! echo "$JQ_VERSION_OUT" | grep -q "1.7.1"; then
+            echo "FAIL: expected jq version 1.7.1, got: $JQ_VERSION_OUT"
+            exit 1
+          fi
+          echo "PASS: jq 1.7.1 installed successfully"
+
+      - name: Assert installed output is true
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true, got: $INSTALLED"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert jq can parse JSON
+        run: |
+          RESULT="$(echo '{"hello":"world"}' | jq -r '.hello')"
+          echo "jq parse result: $RESULT"
+          if [ "$RESULT" != "world" ]; then
+            echo "FAIL: jq did not parse JSON correctly"
+            exit 1
+          fi
+          echo "PASS: jq parses JSON correctly"

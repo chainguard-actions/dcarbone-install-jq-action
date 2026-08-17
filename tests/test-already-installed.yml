@@ -1,0 +1,37 @@
+name: Test jq already installed detection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure jq is already present
+        run: |
+          which jq && echo "jq already present" || sudo apt-get install -y jq
+          jq --version
+
+      - id: action
+        uses: .
+        with:
+          version: "1.7.1"
+          force: "false"
+
+      - name: Assert found output is true (jq was pre-existing)
+        env:
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "found: $FOUND"
+          if [ "$FOUND" != "true" ]; then
+            echo "FAIL: expected found=true when jq is pre-installed, got: $FOUND"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert jq is still functional
+        run: |
+          which jq || { echo "FAIL: jq not found on PATH"; exit 1; }
+          JQ_VERSION_OUT="$(jq --version)"
+          echo "jq version: $JQ_VERSION_OUT"
+          echo "PASS: jq is functional"

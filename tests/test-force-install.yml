@@ -1,0 +1,41 @@
+name: Test force jq install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure jq is already present (simulate pre-existing install)
+        run: |
+          which jq && echo "jq already present" || sudo apt-get install -y jq
+          jq --version
+
+      - id: action
+        uses: .
+        with:
+          version: "1.7.1"
+          force: "true"
+
+      - name: Assert installed output is true (force=true always sets installed)
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true when force=true, got: $INSTALLED"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert jq is functional after force install
+        run: |
+          which jq || { echo "FAIL: jq not found on PATH after force install"; exit 1; }
+          JQ_VERSION_OUT="$(jq --version)"
+          echo "jq version: $JQ_VERSION_OUT"
+          if ! echo "$JQ_VERSION_OUT" | grep -q "1.7"; then
+            echo "FAIL: expected jq 1.7.x after force install, got: $JQ_VERSION_OUT"
+            exit 1
+          fi
+          echo "PASS: jq functional after force install"
