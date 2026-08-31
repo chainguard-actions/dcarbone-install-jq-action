@@ -1,0 +1,58 @@
+name: Test jq install version 1.5
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_OS: Linux
+      RUNNER_ARCH: X64
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner environment
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/runner-tool-cache
+
+      - id: action
+        uses: .
+        with:
+          version: '1.5'
+          force: 'true'
+
+      - name: Assert installed output is true
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert jq is available and functional
+        run: |
+          echo "Checking for jq..."
+          JQ_BIN=""
+          if [ -f "/tmp/runner-tool-cache/jq/jq" ]; then
+            JQ_BIN="/tmp/runner-tool-cache/jq/jq"
+            echo "Found jq in tool cache"
+          elif command -v jq >/dev/null 2>&1; then
+            JQ_BIN="jq"
+            echo "Found jq on PATH: $(which jq)"
+          else
+            echo "FAIL: jq not found on PATH or in tool cache"
+            exit 1
+          fi
+          echo "jq version: $($JQ_BIN --version)"
+          RESULT="$(echo '{"key":"value"}' | $JQ_BIN -r '.key')"
+          echo "jq parse result: $RESULT"
+          if [ "$RESULT" != "value" ]; then
+            echo "FAIL: jq did not parse JSON correctly"
+            exit 1
+          fi
+          echo "PASS: jq parsed JSON correctly"

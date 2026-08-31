@@ -1,0 +1,49 @@
+name: Test jq already installed (no force)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_OS: Linux
+      RUNNER_ARCH: X64
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Prepare runner environment
+        run: |
+          mkdir -p /tmp/runner-temp
+          mkdir -p /tmp/runner-tool-cache
+
+      - name: Pre-install jq
+        run: |
+          apt-get install -y jq 2>/dev/null || true
+          echo "Pre-installed jq version: $(jq --version 2>/dev/null || echo 'not found')"
+
+      - id: action
+        uses: .
+        with:
+          version: '1.7'
+          force: 'false'
+
+      - name: Assert found output is true (jq was pre-installed)
+        env:
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "found: $FOUND"
+          if [ "$FOUND" != "true" ]; then
+            echo "FAIL: expected found=true when jq is pre-installed"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert jq is still functional
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "FAIL: jq not found on PATH"
+            exit 1
+          fi
+          echo "jq version: $(jq --version)"
+          echo "PASS: jq is available"
