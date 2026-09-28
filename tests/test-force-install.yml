@@ -1,0 +1,59 @@
+name: Test force install jq
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare runner directories
+        run: |
+          mkdir -p "${RUNNER_TEMP}"
+          mkdir -p "${RUNNER_TOOL_CACHE}"
+      - name: Pre-install jq to simulate existing installation
+        run: |
+          sudo apt-get install -y jq
+          echo "Pre-installed jq version: $(jq --version)"
+      - id: action
+        uses: .
+        with:
+          version: "1.7.1"
+          force: "true"
+      - name: Assert found output reflects pre-existing jq
+        env:
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "found: $FOUND"
+          if [ "$FOUND" != "true" ]; then
+            echo "FAIL: expected found=true since jq was pre-installed"
+            exit 1
+          fi
+          echo "PASS: found=true"
+      - name: Assert installed output is true (force=true always sets installed)
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true when force=true"
+            exit 1
+          fi
+          echo "PASS: installed=true"
+      - name: Assert jq is available after force install
+        run: |
+          # Check both PATH and tool cache
+          JQ_VERSION=""
+          if command -v jq >/dev/null 2>&1; then
+            JQ_VERSION="$(jq --version 2>/dev/null || true)"
+          elif [ -f "${RUNNER_TOOL_CACHE}/jq/jq" ]; then
+            JQ_VERSION="$("${RUNNER_TOOL_CACHE}/jq/jq" --version 2>/dev/null || true)"
+          fi
+          echo "jq version: $JQ_VERSION"
+          if [ -z "$JQ_VERSION" ]; then
+            echo "FAIL: jq not found after force install"
+            exit 1
+          fi
+          echo "PASS: jq is available: $JQ_VERSION"

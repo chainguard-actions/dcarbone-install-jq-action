@@ -1,0 +1,50 @@
+name: Test install jq version 1.6
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare runner directories
+        run: |
+          mkdir -p "${RUNNER_TEMP}"
+          mkdir -p "${RUNNER_TOOL_CACHE}"
+      - id: action
+        uses: .
+        with:
+          version: "1.6"
+          force: "true"
+      - name: Assert installed output is true
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true"
+            exit 1
+          fi
+          echo "PASS: installed=true"
+      - name: Assert jq 1.6 is available
+        run: |
+          # Check both PATH and tool cache
+          JQ_VERSION=""
+          if command -v jq >/dev/null 2>&1; then
+            JQ_VERSION="$(jq --version 2>/dev/null || true)"
+          elif [ -f "${RUNNER_TOOL_CACHE}/jq/jq" ]; then
+            JQ_VERSION="$("${RUNNER_TOOL_CACHE}/jq/jq" --version 2>/dev/null || true)"
+          fi
+          echo "jq version: $JQ_VERSION"
+          if [ -z "$JQ_VERSION" ]; then
+            echo "FAIL: jq not found or version empty"
+            exit 1
+          fi
+          if echo "$JQ_VERSION" | grep -q "1.6"; then
+            echo "PASS: jq 1.6 installed correctly"
+          else
+            echo "FAIL: expected jq 1.6, got $JQ_VERSION"
+            exit 1
+          fi

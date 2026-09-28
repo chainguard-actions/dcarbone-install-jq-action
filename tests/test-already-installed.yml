@@ -1,0 +1,56 @@
+name: Test jq already installed - found output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_TEMP: /tmp/runner-temp
+      RUNNER_TOOL_CACHE: /tmp/runner-tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare runner directories
+        run: |
+          mkdir -p "${RUNNER_TEMP}"
+          mkdir -p "${RUNNER_TOOL_CACHE}"
+      - name: Pre-install jq to simulate existing installation
+        run: |
+          sudo apt-get install -y jq
+          echo "Pre-installed jq version: $(jq --version)"
+      - id: action
+        uses: .
+        with:
+          force: "false"
+      - name: Assert found output is true
+        env:
+          FOUND: ${{ steps.action.outputs.found }}
+        run: |
+          echo "found: $FOUND"
+          if [ "$FOUND" != "true" ]; then
+            echo "FAIL: expected found=true since jq was pre-installed"
+            exit 1
+          fi
+          echo "PASS: found=true"
+      - name: Assert installed output reflects no forced install
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          # When jq is already found and force=false, installed should be false
+          # The expression: force=='true' || found=='false' || windows_found=='false'
+          # = false || false || false = false
+          if [ "$INSTALLED" != "false" ]; then
+            echo "FAIL: expected installed=false when jq already present and force=false"
+            exit 1
+          fi
+          echo "PASS: installed=false"
+      - name: Assert jq is still available
+        run: |
+          echo "jq path: $(which jq)"
+          JQ_VERSION="$(jq --version)"
+          echo "jq version: $JQ_VERSION"
+          if [ -z "$JQ_VERSION" ]; then
+            echo "FAIL: jq not found"
+            exit 1
+          fi
+          echo "PASS: jq is available"
