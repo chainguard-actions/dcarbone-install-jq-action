@@ -85,10 +85,12 @@ runs:
       shell: powershell
       env:
         JQ_VERSION: '${{ inputs.version }}'
-      run: $env:GITHUB_ACTION_PATH\scripts\windowsish.ps1
+      run: |
+        & "$Env:GITHUB_ACTION_PATH\scripts\windowsish.ps1"
     - name: 'Install jq - Windows-ish 1.7+'
       if: runner.os == 'Windows' && (startsWith(inputs.version, '1.7') || startsWith(inputs.version, '1.8')) && (steps.jq-check-windows.outputs.found == 'false' || inputs.force == 'true')
       shell: powershell
       env:
         JQ_VERSION: '${{ inputs.version }}'
-      run: $env:GITHUB_ACTION_PATH\scripts\windowsish-17.ps1
+      run: |
+        & "$Env:GITHUB_ACTION_PATH\scripts\windowsish-17.ps1"
