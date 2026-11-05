@@ -1,0 +1,43 @@
+name: Test force install default version
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Ensure wget is available
+        run: |
+          if ! command -v wget >/dev/null 2>&1; then
+            SUDO=""; command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq wget
+          fi
+      - id: action
+        uses: .
+        with:
+          force: 'true'
+      - name: Assert jq 1.6 downloaded into tool cache
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ "$INSTALLED" != "true" ]; then
+            echo "FAIL: expected installed=true with force"; exit 1
+          fi
+          BIN="$RUNNER_TOOL_CACHE/jq/jq"
+          if [ ! -s "$BIN" ]; then
+            echo "FAIL: $BIN missing or empty"; exit 1
+          fi
+          # v1.0.0 does not chmod the binary; verify the payload on a copy
+          TMPBIN="$(mktemp)"
+          cp "$BIN" "$TMPBIN"
+          chmod +x "$TMPBIN"
+          V="$("$TMPBIN" --version)"
+          echo "tool cache version: $V"
+          [ "$V" = "jq-1.6" ] || { echo "FAIL: expected jq-1.6"; exit 1; }
+          echo '{"a":[1,2,3]}' | "$TMPBIN" -e '.a | length == 3'
+          case ":$PATH:" in
+            *":$RUNNER_TOOL_CACHE/jq:"*) echo "tool cache dir on PATH" ;;
+            *) echo "FAIL: $RUNNER_TOOL_CACHE/jq not added to PATH"; exit 1 ;;
+          esac
+          echo "PASS"

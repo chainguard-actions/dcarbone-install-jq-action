@@ -1,0 +1,43 @@
+name: Test basic usage (defaults)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Ensure wget is available (needed if jq must be installed)
+        run: |
+          if ! command -v wget >/dev/null 2>&1; then
+            SUDO=""; command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+            $SUDO apt-get update -qq && $SUDO apt-get install -y -qq wget
+          fi
+      - id: action
+        uses: .
+      - name: Assert outputs are consistent and jq works
+        env:
+          FOUND: ${{ steps.action.outputs.found }}
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "found: $FOUND"
+          echo "installed: $INSTALLED"
+          if [ "$FOUND" != "true" ] && [ "$FOUND" != "false" ]; then
+            echo "FAIL: found must be true/false"; exit 1
+          fi
+          if [ "$INSTALLED" != "true" ] && [ "$INSTALLED" != "false" ]; then
+            echo "FAIL: installed must be true/false"; exit 1
+          fi
+          if [ "$FOUND" = "$INSTALLED" ]; then
+            echo "FAIL: without force, exactly one of found/installed must be true"; exit 1
+          fi
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "FAIL: jq not on PATH"; exit 1
+          fi
+          jq --version
+          echo '{"a":42}' | jq -e '.a == 42'
+          if [ "$INSTALLED" = "true" ]; then
+            V="$("$RUNNER_TOOL_CACHE/jq/jq" --version)"
+            echo "installed version: $V"
+            [ "$V" = "jq-1.6" ] || { echo "FAIL: expected jq-1.6"; exit 1; }
+          fi
+          echo "PASS"
