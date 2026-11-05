@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
+| v1.0.0 | [`v1.0.0`](https://github.com/chainguard-actions/dcarbone-install-jq-action/tree/v1.0.0) | [`b75e140`](https://github.com/dcarbone/install-jq-action/commit/b75e140f384e9da05504b0c9d8b055ec56345b0a) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-jq-action/blob/v1.0.0/HARDENING.md) |
 | v2.1.0 | [`v2.1.0`](https://github.com/chainguard-actions/dcarbone-install-jq-action/tree/v2.1.0) | [`8867ddb`](https://github.com/dcarbone/install-jq-action/commit/8867ddb4788346d7c22b72ea2e2ffe4d514c7bcb) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-jq-action/blob/v2.1.0/HARDENING.md) |
 | v3.1.1 | [`v3.1.1`](https://github.com/chainguard-actions/dcarbone-install-jq-action/tree/v3.1.1) | [`f0e10f4`](https://github.com/dcarbone/install-jq-action/commit/f0e10f46ff84f4d32178b4b76e1ef180b16f82c3) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-jq-action/blob/v3.1.1/HARDENING.md) |
 | v3.2.0 | [`v3.2.0`](https://github.com/chainguard-actions/dcarbone-install-jq-action/tree/v3.2.0) | [`b7ef57d`](https://github.com/dcarbone/install-jq-action/commit/b7ef57d46ece78760b4019dbc4080a1ba2a40b45) | [`HARDENING.md`](https://github.com/chainguard-actions/dcarbone-install-jq-action/blob/v3.2.0/HARDENING.md) |
